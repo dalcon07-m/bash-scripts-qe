@@ -29,23 +29,13 @@ echo "$title" >> "$output_file"
 
 # 'num_atoms + 2' because we need to skip the title and atom count in the loop
 atoms=$((num_atoms + 2))
-
 for ((i = 3; i <= $atoms; i++)); do
-    # Use awk to extract atomic coordinates from each line and transform them using the lattice vectors
-    awk -v i="$i" \
-        -v v10="${v1[0]}" -v v11="${v1[1]}" -v v12="${v1[2]}" \
-        -v v20="${v2[0]}" -v v21="${v2[1]}" -v v22="${v2[2]}" \
-        -v v30="${v3[0]}" -v v31="${v3[1]}" -v v32="${v3[2]}" \
-        'NR == i {
-            # Transform the crystal coordinates (x', y', z') to Cartesian coordinates
-            x_new = $2 * v10 + $3 * v20 + $4 * v30;
-            y_new = $2 * v11 + $3 * v21 + $4 * v31;
-            z_new = $2 * v12 + $3 * v22 + $4 * v32;
+                            awk -v i="$i" -v j="$j" -v k="$k" -v v10="${v1[0]}" -v v11="${v1[1]}" -v v12="${v1[2]}" \
+                                -v v20="${v2[0]}" -v v21="${v2[1]}" -v v22="${v2[2]}" -v v30="${v3[0]}" -v v31="${v3[1]}" -v v32="${v3[2]}" \ 
+                                'NR == i {printf "%s %f %f %f\n", $1, $2*v10+$3*v20+$4*v30, $2*v11+$3*v21+$4*v31, $2*v12+$3*v22+$4*v32}' "$input_file" >> "$output_file"
 
-            # Print the transformed coordinates in Cartesian format
-            printf "%s %.6f %.6f %.6f\n", $1, x_new, y_new, z_new;
-        }' "$input_file" >> "$output_file"
-done
+    done
+
 
 # Message indicating that the transformation is complete
 echo "Atomic coordinates transformed to Cartesian coordinates in $output_file"
