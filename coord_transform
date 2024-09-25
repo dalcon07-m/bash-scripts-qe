@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Script to convert crystal output coordinates from Quantum Espresso to Cartesian coordinates in Angstroms.
+# The input file should contain atomic coordinates in crystal vectors format, and the script will
+# transform them into Cartesian coordinates using the provided cell parameters and vectors.
+
+# Input and output files
+input_file="relax_cell_cristal.xyz"  # Input file with atomic coordinates in crystal format (Quantum Espresso output, .xyz)
+output_file="coordinates_ang.xyz"    # Output file with atomic coordinates in Cartesian coordinates (in Angstroms)
+
+# Cell parameter and lattice vectors
+c=5.58  # Cell parameter (in Angstroms) divided by 2
+
+# Define the lattice vectors (expressed in terms of the cell parameter)
+v1=(-$c 0 $c)
+v2=(0 $c $c)
+v3=(-$c $c 0)
+
+# Read the number of atoms and title of the input file
+num_atoms=$(sed '1q;d' "$input_file")   # First line contains the number of atoms
+title=$(sed '2q;d' "$input_file")       # Second line contains the title or comment
+
+# Create the output file and write the header (number of atoms and title)
+touch "$output_file"
+echo "$num_atoms" > "$output_file"
+echo "$title" >> "$output_file"
+
+# Loop to transform the atomic coordinates from crystal to Cartesian coordinates
+
+# 'num_atoms + 2' because we need to skip the title and atom count in the loop
+atoms=$((num_atoms + 2))
+
+for ((i = 3; i <= $atoms; i++)); do
+    # Use awk to extract atomic coordinates from each line and transform them using the lattice vectors
+    awk -v i="$i" \
+        -v v10="${v1[0]}" -v v11="${v1[1]}" -v v12="${v1[2]}" \
+        -v v20="${v2[0]}" -v v21="${v2[1]}" -v v22="${v2[2]}" \
+        -v v30="${v3[0]}" -v v31="${v3[1]}" -v v32="${v3[2]}" \
+        'NR == i {
+            # Transform the crystal coordinates (x', y', z') to Cartesian coordinates
+            x_new = $2 * v10 + $3 * v20 + $4 * v30;
+            y_new = $2 * v11 + $3 * v21 + $4 * v31;
+            z_new = $2 * v12 + $3 * v22 + $4 * v32;
+
+            # Print the transformed coordinates in Cartesian format
+            printf "%s %.6f %.6f %.6f\n", $1, x_new, y_new, z_new;
+        }' "$input_file" >> "$output_file"
+done
+
+# Message indicating that the transformation is complete
+echo "Atomic coordinates transformed to Cartesian coordinates in $output_file"
